@@ -1,0 +1,25 @@
+name: pandoc
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  pandoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: create file list
+        id: files_list
+        run: |
+          echo "::set-output name=files::$(find . -name \*.md -print0 | xargs -0 printf '"%s" ')"
+      - uses: docker://pandoc/latex:2.9
+        with:
+          args: --output=result.pdf ${{ steps.files_list.outputs.files }}  --table-of-contents --file-scope -f gfm --pdf-engine=xelatex
+      - uses: meeDamian/github-release@2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.RELEASE_TAG }}
+          files: result.pdf
+          gzip: false
